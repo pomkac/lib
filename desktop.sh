@@ -80,12 +80,16 @@ if [[ $LINUXFAMILY == *sun* && $BRANCH == "default" ]]; then
  
 	# use Armbian prepared config
 	cp $SRC/lib/config/xorg.conf.sunxi $DEST/cache/sdcard/etc/X11/xorg.conf
- 
+	display_alert "Compiling VDPAU libs" "sunxi" "info"
+	git clone -q https://github.com/Snaipe/libcsptr.git $DEST/cache/sdcard/tmp/libcsptr
+	chroot $DEST/cache/sdcard /bin/bash -c "cd /tmp/libcsptr && mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX=/usr/local .. && make $CTHREADS && make install" >/dev/null 2>&1	
+	
+	display_alert "Compiling VDPAU" "sunxi" "info"
 	# compile video acceleration
-	git clone -q https://github.com/linux-sunxi/libvdpau-sunxi.git $DEST/cache/sdcard/tmp/libvdpau-sunxi 
+	git clone -b staging -q https://github.com/linux-sunxi/libvdpau-sunxi.git $DEST/cache/sdcard/tmp/libvdpau-sunxi 
 	
 	# with temporaly fix
-	chroot $DEST/cache/sdcard /bin/bash -c "cd /tmp/libvdpau-sunxi; git checkout 906c36ed45ceb53fecd5fc72e821c11849eeb1a3; make $CTHREADS" >/dev/null 2>&1	
+	chroot $DEST/cache/sdcard /bin/bash -c "cd /tmp/libvdpau-sunxi; make $CTHREADS" >/dev/null 2>&1	
 	error_num=$(($error_num+$?))	
 	
 	d=$DEST/cache/sdcard/usr/lib/arm-linux-gnueabihf/vdpau
@@ -96,7 +100,7 @@ if [[ $LINUXFAMILY == *sun* && $BRANCH == "default" ]]; then
 	echo "export VDPAU_DRIVER=sunxi" >> $DEST/cache/sdcard/etc/profile
 	
 	# enable memory reservations
-	sed "s/sunxi_ve_mem_reserve=0 sunxi_g2d_mem_reserve=0 sunxi_no_mali_mem_reserve sunxi_fb_mem_reserve=16 //g" -i $DEST/cache/sdcard/boot/boot.cmd
+	sed "s/sunxi_ve_mem_reserve=0 sunxi_g2d_mem_reserve=0 sunxi_no_mali_mem_reserve sunxi_fb_mem_reserve=16 /sunxi_ve_mem_reserve=80 sunxi_g2d_mem_reserve=64 sunxi_fb_mem_reserve=16 /g" -i $DEST/cache/sdcard/boot/boot.cmd
 	mkimage -C none -A arm -T script -d $DEST/cache/sdcard/boot/boot.cmd $DEST/cache/sdcard/boot/boot.scr >> /dev/null 
 	
 	# clean deb cache
