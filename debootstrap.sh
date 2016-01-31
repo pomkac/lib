@@ -188,12 +188,12 @@ install_packet "console-setup console-data kbd console-common unicode-data" "Ins
 
 if [[ $LINUXFAMILY == *sun7i* && $BRANCH == "default" ]]; then
 display_alert "Compiling libCEC libs" "libCEC" "info"
-git clone -q https://github.com/Pulse-Eight/platform.git $DEST/cache/sdcard/tmp/platform.git
-chroot $DEST/cache/sdcard /bin/bash -c "cd /tmp/platform && mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX=/usr/local .. && make $CTHREADS && make install" >/dev/null 2>&1	
+git clone -q https://github.com/Pulse-Eight/platform.git $DEST/cache/sdcard/tmp/platform
+chroot $DEST/cache/sdcard /bin/bash -c "cd /tmp/platform && mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX=/usr .. && make $CTHREADS && make install" >/dev/null 2>&1	
 
 display_alert "Compiling libCEC" "libCEC" "info"
-git clone -q https://github.com/Pulse-Eight/libcec.git $DEST/cache/sdcard/tmp/libcec.git
-chroot $DEST/cache/sdcard /bin/bash -c "cd /tmp/libcec && patch -p1 < libcecV2.diff && mkdir build && cd build && cmake -DHAVE_EXYNOS_API=1 -DCMAKE_INSTALL_PREFIX=/usr/local .. && make $CTHREADS && make install && ldconfig" >/dev/null 2>&1
+git clone -q https://github.com/pomkac/libcec.git $DEST/cache/sdcard/tmp/libcec
+chroot $DEST/cache/sdcard /bin/bash -c "cd /tmp/libcec && patch -p1 < libcecV2.diff && mkdir build && cd build && cmake -DHAVE_EXYNOS_API=1 -DCMAKE_INSTALL_PREFIX=/usr .. && make $CTHREADS && make install && ldconfig" >/dev/null 2>&1
 fi
 
 chroot $DEST/cache/sdcard /bin/bash -c "apt-get clean"
