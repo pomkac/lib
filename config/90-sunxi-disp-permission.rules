@@ -1,0 +1,6 @@
+KERNEL=="disp", MODE="0777", GROUP="video"
+KERNEL=="cedar_dev", MODE="0777", GROUP="video" 
+KERNEL=="g2d", MODE="0777", GROUP="video"
+KERNEL=="mali", MODE="0777", GROUP="video"
+KERNEL=="ump", MODE="0777", GROUP="video"
+KERNEL=="CEC", MODE="0777", GROUP="video"

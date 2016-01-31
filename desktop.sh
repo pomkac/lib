@@ -65,12 +65,21 @@ sed "s/NODM_ENABLED=\(.*\)/NODM_ENABLED=true/g" -i $DEST/cache/sdcard/etc/defaul
 # Compile Turbo Frame buffer for sunxi
 if [[ $LINUXFAMILY == *sun* && $BRANCH == "default" ]]; then
 
-	display_alert "Compiling FB Turbo" "sunxi" "info"
-
 	local error_num=0
 	
+	display_alert "Compiling libUMP" "sunxi" "info"
+	git clone -q https://github.com/linux-sunxi/libump.git $DEST/cache/sdcard/tmp/libump
+	chroot $DEST/cache/sdcard /bin/bash -c "cd /tmp/libump && autoreconf -i && ./configure --prefix=/usr && make $CTHREADS && make install >/dev/null 2>&1"
+	error_num=$(($error_num+$?))
+	
+	display_alert "Compiling libdri2" "sunxi" "info"
+	git clone -q https://github.com/robclark/libdri2.git $DEST/cache/sdcard/tmp/libdri2
+	chroot $DEST/cache/sdcard /bin/bash -c "cd /tmp/libdri2 && ./autogen.sh && ./configure --prefix=/usr && make $CTHREADS && make install >/dev/null 2>&1"
+	error_num=$(($error_num+$?))
+	
+	display_alert "Compiling FB Turbo" "sunxi" "info"
 	# quemu bug walkaround
-	git clone -q https://github.com/ssvb/xf86-video-fbturbo.git $DEST/cache/sdcard/tmp/xf86-video-fbturbo
+	git clone -b 0.4.0 -q https://github.com/ssvb/xf86-video-fbturbo.git $DEST/cache/sdcard/tmp/xf86-video-fbturbo
 	chroot $DEST/cache/sdcard /bin/bash -c "cd /tmp/xf86-video-fbturbo && autoreconf -vi >/dev/null 2>&1"
 	error_num=$(($error_num+$?))
 	chroot $DEST/cache/sdcard /bin/bash -c "cd /tmp/xf86-video-fbturbo && ./configure --prefix=/usr >/dev/null 2>&1"
@@ -78,8 +87,14 @@ if [[ $LINUXFAMILY == *sun* && $BRANCH == "default" ]]; then
 	chroot $DEST/cache/sdcard /bin/bash -c "cd /tmp/xf86-video-fbturbo && make $CTHREADS && make install >/dev/null 2>&1"	
 	error_num=$(($error_num+$?))
  
+	display_alert "Install Mali driver " "sunxi" "info"
+	git clone -q --recursive https://github.com/linux-sunxi/sunxi-mali.git $DEST/cache/sdcard/tmp/sunxi-mali
+	chroot $DEST/cache/sdcard /bin/bash -c "cd /tmp/sunxi-mali && make config ABI=armhf VERSION=r3p0 EGL_TYPE=x11 && make install >/dev/null 2>&1"
+	error_num=$(($error_num+$?))
+ 
 	# use Armbian prepared config
 	cp $SRC/lib/config/xorg.conf.sunxi $DEST/cache/sdcard/etc/X11/xorg.conf
+	
 	display_alert "Compiling VDPAU libs" "sunxi" "info"
 	git clone -q https://github.com/Snaipe/libcsptr.git $DEST/cache/sdcard/tmp/libcsptr
 	chroot $DEST/cache/sdcard /bin/bash -c "cd /tmp/libcsptr && mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX=/usr/local .. && make $CTHREADS && make install" >/dev/null 2>&1	
@@ -96,11 +111,16 @@ if [[ $LINUXFAMILY == *sun* && $BRANCH == "default" ]]; then
 	test -d "$d" || mkdir -p "$d" && cp $DEST/cache/sdcard/tmp/libvdpau-sunxi/libvdpau_sunxi.so.1 "$d"
 	ln -s $d/libvdpau_sunxi.so.1 $d/libvdpau_sunxi.so
 
+	# Set display permission
+	cp $SRC/lib/config/90-sunxi-disp-permission.rules $DEST/cache/sdcard/lib/udev/rules.d/90-sunxi-disp-permission.rules
+	echo "mali" >> $DEST/cache/sdcard/etc/modules
+	
 	# That we can just play
 	echo "export VDPAU_DRIVER=sunxi" >> $DEST/cache/sdcard/etc/profile
+	echo -e "VDPAU_DRIVER=sunxi\nVDPAU_OSD=1" >> $DEST/cache/sdcard/etc/environment
 	
 	# enable memory reservations
-	sed "s/sunxi_ve_mem_reserve=0 sunxi_g2d_mem_reserve=0 sunxi_no_mali_mem_reserve sunxi_fb_mem_reserve=16 /sunxi_ve_mem_reserve=80 sunxi_g2d_mem_reserve=64 sunxi_fb_mem_reserve=16 /g" -i $DEST/cache/sdcard/boot/boot.cmd
+	sed "s/sunxi_ve_mem_reserve=0 sunxi_g2d_mem_reserve=0 sunxi_no_mali_mem_reserve sunxi_fb_mem_reserve=16 /sunxi_ve_mem_reserve=80 sunxi_g2d_mem_reserve=64 sunxi_fb_mem_reserve=32 /g" -i $DEST/cache/sdcard/boot/boot.cmd
 	mkimage -C none -A arm -T script -d $DEST/cache/sdcard/boot/boot.cmd $DEST/cache/sdcard/boot/boot.scr >> /dev/null 
 	
 	# clean deb cache
