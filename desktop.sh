@@ -69,12 +69,20 @@ if [[ $LINUXFAMILY == *sun* && $BRANCH == "default" ]]; then
 	
 	display_alert "Compiling libUMP" "sunxi" "info"
 	git clone -q https://github.com/linux-sunxi/libump.git $DEST/cache/sdcard/tmp/libump
-	chroot $DEST/cache/sdcard /bin/bash -c "cd /tmp/libump && autoreconf -i && ./configure --prefix=/usr && make $CTHREADS && make install >/dev/null 2>&1"
+	chroot $DEST/cache/sdcard /bin/bash -c "cd /tmp/libump && autoreconf -i >/dev/null 2>&1"
+	error_num=$(($error_num+$?))
+	chroot $DEST/cache/sdcard /bin/bash -c "cd /tmp/libump && ./configure --prefix=/usr >/dev/null 2>&1"
+	error_num=$(($error_num+$?))
+	chroot $DEST/cache/sdcard /bin/bash -c "cd /tmp/libump && make $CTHREADS && make install >/dev/null 2>&1"
 	error_num=$(($error_num+$?))
 	
 	display_alert "Compiling libdri2" "sunxi" "info"
 	git clone -q https://github.com/robclark/libdri2.git $DEST/cache/sdcard/tmp/libdri2
-	chroot $DEST/cache/sdcard /bin/bash -c "cd /tmp/libdri2 && ./autogen.sh && ./configure --prefix=/usr && make $CTHREADS && make install >/dev/null 2>&1"
+	chroot $DEST/cache/sdcard /bin/bash -c "cd /tmp/libdri2 && ./autogen.sh >/dev/null 2>&1"
+	error_num=$(($error_num+$?))
+	chroot $DEST/cache/sdcard /bin/bash -c "cd /tmp/libdri2 && ./configure --prefix=/usr >/dev/null 2>&1"
+	error_num=$(($error_num+$?))
+	chroot $DEST/cache/sdcard /bin/bash -c "cd /tmp/libdri2 && make $CTHREADS && make install >/dev/null 2>&1"
 	error_num=$(($error_num+$?))
 	
 	display_alert "Compiling FB Turbo" "sunxi" "info"
